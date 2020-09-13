@@ -366,7 +366,7 @@ func managedHostsFileContent(hostIPs []string, hostName, hostDomainName string, 
 		// podIPs field is populated for clusters even
 		// dual-stack feature flag is not enabled.
 		for _, hostIP := range hostIPs {
-			buffer.WriteString(fmt.Sprintf("%s\t%s.%s\t%s\n", hostIP, hostName, hostDomainName, hostName))
+			buffer.WriteString(fmt.Sprintf("%s\t%s.%s %s\n", hostIP, hostName, hostDomainName, hostName))
 		}
 	} else {
 		for _, hostIP := range hostIPs {
