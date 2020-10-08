@@ -116,13 +116,12 @@ func FindTailLineStartIndexV2(f io.ReadSeeker, n int64) (int64, error) {
 	var left, cnt, idx int64
 	var bufSize = blockSize
 	buf := make([]byte, bufSize)
-
-	for left = size; left > 0; {
+	for left = size; left > 0; left = idx {
 		idx = left - blockSize
 		if idx < 0 {
 			idx = 0
 			bufSize = int(left)
-			buf = make([]byte, bufSize)
+			buf = buf[:bufSize]
 		}
 		if _, err := f.Seek(idx, io.SeekStart); err != nil {
 			return 0, err
@@ -130,15 +129,18 @@ func FindTailLineStartIndexV2(f io.ReadSeeker, n int64) (int64, error) {
 		if _, err := f.Read(buf); err != nil {
 			return 0, err
 		}
-		for i := 0; i < bufSize; i++ {
-			if buf[bufSize-i-1] == '\n' {
-				cnt++
-				if cnt == n+1 {
-					return left - int64(i), nil
-				}
+
+		for ; cnt <= n; cnt++ {
+			var i = bytes.LastIndexByte(buf, '\n')
+			if i == -1 {
+				break
 			}
+			buf = buf[:i]
+			left -= int64(bufSize - i - 1)
 		}
-		left = idx
+		if cnt == n+1 {
+			break
+		}
 	}
 
 	return left, nil

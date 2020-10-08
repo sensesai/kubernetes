@@ -53,18 +53,18 @@ func TestTail(t *testing.T) {
 
 func BenchmarkFindTailLineStartIndex(b *testing.B) {
 	lineCount := 200
-	lineSize := 150 // assume average log line is 150 bytes
+	lineSize := 100 // assume average log line is 100 bytes
 	line := strings.Repeat("a", lineSize) + "\n"
 	testBytes := make([]byte, 0, lineCount*lineSize)
 	for i := 0; i < lineCount; i++ {
 		testBytes = append(testBytes, line...)
 	}
 
-	b.Log("Benchmark last 100 line")
+	b.Log("Benchmark last 10 lines")
 	r := bytes.NewReader(testBytes)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := FindTailLineStartIndex(r, 100)
+		_, err := FindTailLineStartIndex(r, 10)
 		if err != nil {
 			b.Error(err)
 		}
@@ -74,18 +74,18 @@ func BenchmarkFindTailLineStartIndex(b *testing.B) {
 
 func BenchmarkFindTailLineStartIndexV2(b *testing.B) {
 	lineCount := 200
-	lineSize := 150 // assume average log line is 150 bytes
+	lineSize := 100 // assume average log line is 100 bytes
 	line := strings.Repeat("a", lineSize) + "\n"
 	testBytes := make([]byte, 0, lineCount*lineSize)
 	for i := 0; i < lineCount; i++ {
 		testBytes = append(testBytes, line...)
 	}
 
-	b.Log("Benchmark last 100 line")
+	b.Log("Benchmark last 10 lines")
 	r := bytes.NewReader(testBytes)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := FindTailLineStartIndexV2(r, 100)
+		_, err := FindTailLineStartIndexV2(r, 10)
 		if err != nil {
 			b.Error(err)
 		}
