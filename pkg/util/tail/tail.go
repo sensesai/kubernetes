@@ -97,3 +97,49 @@ func FindTailLineStartIndex(f io.ReadSeeker, n int64) (int64, error) {
 	}
 	return left, nil
 }
+
+// FindTailLineStartIndexV2 returns the start of last nth line.
+// * If n < 0, return the beginning of the file.
+// * If n >= 0, return the beginning of last nth line.
+// Notice that if the last line is incomplete (no end-of-line), it will not be counted
+// as one line.
+func FindTailLineStartIndexV2(f io.ReadSeeker, n int64) (int64, error) {
+	if n < 0 {
+		return 0, nil
+	}
+	// seek to end for file size
+	size, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, err
+	}
+
+	var left, cnt, idx int64
+	var bufSize = blockSize
+	buf := make([]byte, bufSize)
+
+	for left = size; left > 0; {
+		idx = left - blockSize
+		if idx < 0 {
+			idx = 0
+			bufSize = int(left)
+			buf = make([]byte, bufSize)
+		}
+		if _, err := f.Seek(idx, io.SeekStart); err != nil {
+			return 0, err
+		}
+		if _, err := f.Read(buf); err != nil {
+			return 0, err
+		}
+		for i := 0; i < bufSize; i++ {
+			if buf[bufSize-i-1] == '\n' {
+				cnt++
+				if cnt == n+1 {
+					return left - int64(i), nil
+				}
+			}
+		}
+		left = idx
+	}
+
+	return left, nil
+}
