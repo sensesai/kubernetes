@@ -17,6 +17,7 @@ limitations under the License.
 package tail
 
 import (
+	"bufio"
 	"bytes"
 	"strings"
 	"testing"
@@ -47,6 +48,46 @@ func TestTail(t *testing.T) {
 		}
 		if s != test.start {
 			t.Errorf("%d != %d", s, test.start)
+		}
+	}
+}
+
+func TestTailBufReader(t *testing.T) {
+	line := strings.Repeat("a", blockSize)
+	testBytes := []byte(line + "\n" +
+		line + "\n" +
+		line + "\n" +
+		line + "\n" +
+		line[blockSize/2:]) // incomplete line
+
+	for c, test := range []struct {
+		n    int64
+		eols int64
+	}{
+		// {n: -1, eols: 0},
+		{n: 1, eols: 1},
+		{n: 2, eols: 2},
+		{n: 3, eols: 3},
+		{n: 4, eols: 3},
+		{n: 9999, eols: 3},
+	} {
+		t.Logf("TestCase #%d: %+v", c, test)
+		r := bytes.NewReader(testBytes)
+		var br *bufio.Reader
+		br, err := GetTailLineBufReader(r, test.n)
+		if err != nil {
+			t.Error(err)
+		}
+
+		buf := make([]byte, len(testBytes))
+		if _, err := br.Read(buf); err != nil {
+			t.Error(err)
+		}
+		bufSize := br.Buffered()
+		t.Logf("Buffered bytes: %d/%d", bufSize, br.Size())
+		c := int64(bytes.Count(buf, eol))
+		if c != test.eols {
+			t.Errorf("%d != %d", c, test.eols)
 		}
 	}
 }

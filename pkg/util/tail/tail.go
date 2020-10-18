@@ -17,6 +17,7 @@ limitations under the License.
 package tail
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"io/ioutil"
@@ -96,4 +97,46 @@ func FindTailLineStartIndex(f io.ReadSeeker, n int64) (int64, error) {
 		left += int64(idx)
 	}
 	return left, nil
+}
+
+// GetTailLineBufReader returns the start of last nth line with a bufio.Reader.
+// * If n < 0, return the beginning of the file.
+// * If n >= 0, return the beginning of last nth line.
+// Notice that if the last line is incomplete (no end-of-line), it will not be counted
+// as one line.
+func GetTailLineBufReader(f io.ReadSeeker, n int64) (*bufio.Reader, error) {
+	if n < 0 {
+		return nil, nil
+	}
+	size, err := f.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+	var left, cnt int64
+	var br *bufio.Reader
+	buf := make([]byte, blockSize)
+	for right := size; right > 0 && cnt <= n; right -= blockSize {
+		left = right - blockSize
+		if left < 0 {
+			left = 0
+			buf = make([]byte, right)
+		}
+		if _, err := f.Seek(left, io.SeekStart); err != nil {
+			return nil, err
+		}
+		br = bufio.NewReader(f)
+		if _, err := br.Read(buf); err != nil {
+			return nil, err
+		}
+		cnt += int64(bytes.Count(buf, eol))
+	}
+	for ; cnt > n; cnt-- {
+		idx := bytes.Index(buf, eol) + 1
+		buf = buf[idx:]
+		left += int64(idx)
+	}
+	if _, err := f.Seek(left, io.SeekStart); err != nil {
+		return nil, err
+	}
+	return br, nil
 }
